@@ -135,6 +135,8 @@ def upload():
         # Plot the waveform with sampling rate and save the plot
         plot_path_sr = plot_waveform_with_sampling_rate(file_path)
 
+        plot_path_decibals = calculate_decibels_with_sampling_rate(file_path, bitrate)
+
         # Calculate decibels with sampling rate
         decibels = calculate_decibels_with_sampling_rate(file_path, plot_path_sr)
         
@@ -162,7 +164,8 @@ def upload():
             flash("Error calculating bitrate")
         
         # Pass the paths of the generated graph images to the template
-        return render_template('upload.html', plot_path_sr_var=plot_path_sr,plot_path_decibals_var=decibels,loudness_plot_path=loudness_plot_path, waveform_plot_path=waveform_plot_path, silence_speech_ratio_plot_path=silence_speech_ratio_plot_path, file_size_var=file_size_mb, bitrate_var=bitrate)
+        return render_template('upload.html', plot_path_sr_var=plot_path_sr, plot_path_decibals_var=plot_path_decibals, loudness_plot_path=loudness_plot_path, waveform_plot_path=waveform_plot_path, silence_speech_ratio_plot_path=silence_speech_ratio_plot_path, file_size_var=file_size_mb, bitrate_var=bitrate)
+
     
     return render_template('upload.html')
 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload</title>
+</head>
+<body>
+    <h1>Upload Audio</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".mp3, .wav">
+        <input type="submit" value="Upload">
+    </form>
+    
+    {% if plot_path %}
+    <h2>Decibel Range Plot</h2>
+    <img src="{{ plot_path }}" alt="Decibel Range Plot">
+    {% endif %}
+
+    {% if loudness_plot_path %}
+    <h2>Loudness Plot</h2>
+    <img src="{{ loudness_plot_path }}" alt="Loudness Plot">
+    {% endif %}
+
+    {% if waveform_plot_path %}
+    <h2>Waveform Plot</h2>
+    <img src="{{ waveform_plot_path }}" alt="Waveform Plot">
+    {% endif %}
+
+    {% if silence_speech_ratio_plot_path %}
+    <h2>Silence Speech Ratio Pie Plot</h2>
+    <img src="{{ silence_speech_ratio_plot_path }}" alt="Silence Speech Ratio Pie Plot">
+    {% endif %}
+
+    {% if file_size_var %}
+    <h2>File Size</h2>
+    <p>{{ file_size_var }}</p>
+    {% endif %}
+
+    {% if bitrate_var %}
+    <h2>Bitrate</h2>
+    <p>{{ bitrate_var }}</p>
+    {% endif %}
+
+    {% if plot_path_decibals_var %}
+    <h2>Decibals</h2>
+    <img src="{{ plot_path_decibals }}" alt="plot_path_decibals">
+    {% endif %}
+
+    {% if plot_path_sr_var %}
+    <h2>Sample Rate</h2>
+    <img src="{{ plot_path_sr }}" alt="plot_path_sr">
+    {% endif %}
+
+</body>
+</html>

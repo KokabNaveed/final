@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Upload History</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Bitrate</th>
+                    <th>Plot Path</th>
+                    <th>Loudness Plot Path</th>
+                    <th>Waveform Plot Path</th>
+                    <th>Silence Speech Ratio Plot Path</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for filename, bitrate, plot_path, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path in uploads %}
+                <tr>
+                    <td>{{ filename }}</td>
+                    <td>{{ bitrate }}</td>
+                    <td>{{ plot_path }}</td>
+                    <td>{{ loudness_plot_path }}</td>
+                    <td>{{ waveform_plot_path }}</td>
+                    <td>{{ silence_speech_ratio_plot_path }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}">Go Back</a>
+    </div>
+</body>
+</html>

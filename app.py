@@ -135,9 +135,8 @@ def upload():
         # Plot the waveform with sampling rate and save the plot
         plot_path_sr = plot_waveform_with_sampling_rate(file_path)
 
-        # Plot the decibel range and save the plot
-        plot_path_decibals = calculate_decibels_with_sampling_rate(file_path)
-
+        # Calculate decibels with sampling rate
+        decibels = calculate_decibels_with_sampling_rate(file_path, plot_path_sr)
         
         # Plot the loudness and save the plot
         loudness_plot_path = plot_loudness(file_path)
@@ -154,8 +153,8 @@ def upload():
         if file_size_mb is not None and bitrate is not None:
             conn = sqlite3.connect('database/users.db')
             cursor = conn.cursor()
-            cursor.execute('INSERT INTO uploads (filename, bitrate, plot_path, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path) VALUES (?, ?, ?, ?, ?, ?)', 
-                           (filename, bitrate, plot_path_sr,plot_path_decibals, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path,plot_path_decibals, plot_path_sr))
+            cursor.execute('INSERT INTO uploads (filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+                           (filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, decibels, plot_path_sr))
             conn.commit()
             conn.close()
             flash(f"File uploaded successfully with bitrate: {bitrate}")
@@ -163,7 +162,7 @@ def upload():
             flash("Error calculating bitrate")
         
         # Pass the paths of the generated graph images to the template
-        return render_template('upload.html', plot_path_sr_var=plot_path_sr,plot_path_decibals_var=plot_path_decibals,loudness_plot_path=loudness_plot_path, waveform_plot_path=waveform_plot_path, silence_speech_ratio_plot_path=silence_speech_ratio_plot_path, file_size_var=file_size_mb, bitrate_var=bitrate)
+        return render_template('upload.html', plot_path_sr_var=plot_path_sr,plot_path_decibals_var=decibels,loudness_plot_path=loudness_plot_path, waveform_plot_path=waveform_plot_path, silence_speech_ratio_plot_path=silence_speech_ratio_plot_path, file_size_var=file_size_mb, bitrate_var=bitrate)
     
     return render_template('upload.html')
 
@@ -171,7 +170,7 @@ def upload():
 def history():
     conn = sqlite3.connect('database/users.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT filename, bitrate, plot_path, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path FROM uploads')
+    cursor.execute('SELECT filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr FROM uploads')
     uploads = cursor.fetchall()
     conn.close()
     

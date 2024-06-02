@@ -179,5 +179,6 @@ def history():
     
     return render_template('history.html', uploads=uploads)
 
+
 if __name__ == '__main__':
     app.run(debug=True)

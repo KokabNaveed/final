@@ -1,6 +1,8 @@
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 
 def load_audio(file_path):
     y, sr = librosa.load(file_path, sr=None)

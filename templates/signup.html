@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Sign Up</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='signup.css') }}">
 </head>
 <body>
     <div class="container">
@@ -11,6 +11,9 @@
         <form action="{{ url_for('signup') }}" method="POST">
             <label for="username">Username:</label>
             <input type="text" name="username" required>
+            <br>
+            <label for="email">Email:</label>
+            <input type="email" name="email" required>
             <br>
             <label for="password">Password:</label>
             <input type="password" name="password" required>

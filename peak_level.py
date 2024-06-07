@@ -1,6 +1,9 @@
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+
 
 def plot_waveform_with_peak(file_path):
     # Load audio file

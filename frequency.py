@@ -1,6 +1,9 @@
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+
 
 def plot_frequency_spectrum(file_path):
     # Load audio file

@@ -1,6 +1,9 @@
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+
 
 def get_loudness(file_path):
     y, sr = librosa.load(file_path)

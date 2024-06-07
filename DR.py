@@ -1,6 +1,8 @@
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 from io import BytesIO
 import os
 

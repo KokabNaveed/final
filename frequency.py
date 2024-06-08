@@ -1,11 +1,12 @@
 import librosa
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
 
 
-def plot_frequency_spectrum(file_path):
+def plot_frequency_spectrum(file_path,filename,username):
     # Load audio file
     y, sr = librosa.load(file_path)
 
@@ -25,7 +26,8 @@ def plot_frequency_spectrum(file_path):
     plt.title('Frequency Spectrum')
     plt.xlabel('Time (s)')
     plt.ylabel('Frequency (Hz)')
-    output_path = 'static/frequency_spectrum.png'
+    plot_filename = f"{username}_{filename}_plot_path_sr.png"
+    output_path = os.path.join('static', plot_filename)
     plt.savefig(output_path)
     plt.close()
     return output_path

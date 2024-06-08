@@ -1,7 +1,6 @@
 import os
-import sqlite3
 import pymysql
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, Response,send_file
 from werkzeug.utils import secure_filename
 from Bitrate import get_bitrate
 from DR import calculate_decibels_with_sampling_rate, plot_waveform_with_sampling_rate
@@ -13,14 +12,16 @@ from harmonicity import get_harmonicity, plot_harmonicity
 from frequency import plot_frequency_spectrum
 from tempo import estimate_tempo
 from datetime import datetime
-
-
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from PIL import Image
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'mp3', 'wav'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+
 
 # Ensure the database and uploads directories exist
 if not os.path.exists('database'):
@@ -187,6 +188,7 @@ def upload():
             return redirect(request.url)
         username = session.get('username')  # Get username from session
 
+ 
         # Plot the waveform with sampling rate and save the plot
         plot_path_sr = plot_waveform_with_sampling_rate(file_path, filename, username)
 
@@ -231,7 +233,7 @@ def upload():
         try:
             # Insert upload details into MySQL database
             cursor.execute('INSERT INTO uploads (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)', 
-                           (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, decibels_with_units, plot_path_sr, harmonicity_plot_path))
+                           (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, frequency_plot_path, plot_path_sr, harmonicity_plot_path))
             conn.commit()
             flash(f"File uploaded successfully with bitrate: {bitrate} kbps")
         except pymysql.MySQLError as e:
@@ -245,16 +247,131 @@ def upload():
 
     return render_template('upload.html')
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/history')
 def history():
-    conn = sqlite3.connect('database/users.db')
+    user_id = session.get('user_id')  # Get user_id from session
+    if user_id is None:
+        flash("You need to log in first")
+        return redirect(url_for('login'))
+    
+    conn = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        db='audio',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
     cursor = conn.cursor()
-    cursor.execute('SELECT filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path FROM uploads')
+    cursor.execute('SELECT * FROM uploads WHERE user_id = %s', (user_id,))
+    # cursor.execute('SELECT filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path FROM uploads WHERE user_id = %s', (user_id,))
     uploads = cursor.fetchall()
     conn.close()
-    
+
+    # Preprocess the paths to replace backslashes with forward slashes
+    for upload in uploads:
+        upload['loudness_plot_path'] = upload['loudness_plot_path'].replace('\\', '/')
+        upload['waveform_plot_path'] = upload['waveform_plot_path'].replace('\\', '/')
+        upload['silence_speech_ratio_plot_path'] = upload['silence_speech_ratio_plot_path'].replace('\\', '/')
+        upload['plot_path_decibels'] = upload['plot_path_decibels'].replace('\\', '/')
+        upload['plot_path_sr'] = upload['plot_path_sr'].replace('\\', '/')
+        upload['harmonicity_plot_path'] = upload['harmonicity_plot_path'].replace('\\', '/')
+    #removing time stamp from filename
+    filename_parts = upload['filename'].split('_', 1)
+    original_filename = filename_parts[1] if len(filename_parts) > 1 else upload['filename']
+    upload['original_filename'] = original_filename
+
     return render_template('history.html', uploads=uploads)
+
+@app.route('/download_record/<int:record_id>')
+def download_record(record_id):
+    username = session.get('username')
+    conn = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        db='audio',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM uploads WHERE audio_id = %s', (record_id,))
+    upload = cursor.fetchone()  # Fetch a single record
+    conn.close()
+    
+    if not upload:
+        flash("Record not found")
+        return redirect(url_for('history'))
+
+    # Removing timestamp from filename
+    filename_parts = upload['filename'].split('_', 1)
+    original_filename = filename_parts[1] if len(filename_parts) > 1 else upload['filename']
+
+    # Create a PDF file
+    pdf_buffer = BytesIO()
+    c = canvas.Canvas(pdf_buffer, pagesize=letter)
+
+    # Add title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(100, 750, "Audio Record Analysis")
+    c.setFont("Helvetica", 12)
+
+    # Add metadata
+    c.drawString(100, 730, f"Name: {username}")
+    c.drawString(100, 710, f"File Name: {original_filename}")
+    c.drawString(100, 690, f"Bitrate: {upload['bitrate']}")
+
+    # Draw images
+    y_position = 650  # Adjust the starting position for drawing images
+
+    def draw_image(image_path, description, c, y_position):
+        if y_position < 80:
+            c.showPage()  # Start a new page if the current one is full
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(100, 750, "Audio Record Analysis (continued)")
+            c.setFont("Helvetica", 12)
+            y_position = 750
+        c.drawString(100, y_position, description)
+        y_position -= 20
+        image = Image.open(image_path)
+        image_width, image_height = image.size
+        aspect = image_height / float(image_width)
+        c.drawInlineImage(image, 100, y_position - image_height, width=400, height=400 * aspect)
+        return y_position - 400 * aspect - 20
+
+    y_position = draw_image(upload['loudness_plot_path'].replace('\\', '/'), "Loudness Plot", c, y_position)
+    y_position = draw_image(upload['waveform_plot_path'].replace('\\', '/'), "Waveform Plot", c, y_position)
+    y_position = draw_image(upload['silence_speech_ratio_plot_path'].replace('\\', '/'), "Silence/Speech Ratio Plot", c, y_position)
+    y_position = draw_image(upload['plot_path_decibels'].replace('\\', '/'), "Decibels Plot", c, y_position)
+    y_position = draw_image(upload['plot_path_sr'].replace('\\', '/'), "Sampling Rate Plot", c, y_position)
+    y_position = draw_image(upload['harmonicity_plot_path'].replace('\\', '/'), "Harmonicity Plot", c, y_position)
+
+    c.save()
+
+    # Save the PDF file to disk temporarily
+    pdf_filename = f"{original_filename}_history.pdf"
+    pdf_path = os.path.join("tmp", pdf_filename.replace(':', '_'))  # Replace illegal characters in filename
+    try:
+       with open(pdf_path, "wb") as f:
+            f.write(pdf_buffer.getvalue())
+    finally:
+        # Close the pdf_buffer
+        pdf_buffer.close()
+
+    # Send the PDF file as a response
+    response = send_file(pdf_path, mimetype='application/pdf', as_attachment=True)
+
+    # Remove the PDF file from disk after sending
+    try:
+        os.remove(pdf_path)
+    except Exception as e:
+        print(f"Error while removing file: {e}")
+
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)

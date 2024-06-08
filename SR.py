@@ -1,4 +1,5 @@
 import librosa
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -8,7 +9,7 @@ def load_audio(file_path):
     y, sr = librosa.load(file_path, sr=None)
     return y, sr
 
-def plot_waveform_with_sampling_rate(file_path):
+def plot_waveform_with_sampling_rate(file_path, filename, username):
     # Load the audio file
     audio_data, sampling_rate = load_audio(file_path)
 
@@ -28,7 +29,8 @@ def plot_waveform_with_sampling_rate(file_path):
     plt.text(0.5, max(audio_data), f'Sampling Rate: {sampling_rate} Hz', 
              horizontalalignment='center', verticalalignment='top', fontsize=12, color='red')
 
-    output_path = 'static/waveform_with_sampling_rate.png'
+    plot_filename = f"{username}_{filename}_waveform_with_sampling_rate.png"
+    output_path = os.path.join('static', plot_filename)
     plt.savefig(output_path)
     plt.close()
     return output_path

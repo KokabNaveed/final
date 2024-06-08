@@ -1,4 +1,5 @@
 import librosa
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -15,7 +16,7 @@ def get_loudness(file_path):
     # magnitude spectrogram S is converted to dB-scaled spectrogram
     return loudness, sr
 
-def plot_loudness(file_path):
+def plot_loudness(file_path,filename,username):
     loudness, sr = get_loudness(file_path)
 
     plt.figure(figsize=(10, 6))
@@ -24,7 +25,8 @@ def plot_loudness(file_path):
     plt.title('Loudness Heatmap')
     plt.xlabel('Time')
     plt.ylabel('Frequency (Hz)')
-    output_path = 'static/loudness_plot.png'
+    plot_filename = f"{username}_{filename}_loudness_plot.png"
+    output_path = os.path.join('static', plot_filename)
     plt.savefig(output_path)
     plt.close()
     return output_path

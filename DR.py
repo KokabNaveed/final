@@ -10,7 +10,7 @@ def load_audio(file_path):
     y, sr = librosa.load(file_path, sr=None)
     return y, sr
 
-def plot_waveform_with_sampling_rate(file_path):
+def plot_waveform_with_sampling_rate(file_path,filename,username):
     # Load the audio file
     audio_data, sampling_rate = load_audio(file_path)
 
@@ -31,7 +31,8 @@ def plot_waveform_with_sampling_rate(file_path):
              horizontalalignment='center', verticalalignment='top', fontsize=12, color='red')
 
     # Save the plot as an image file
-    img_path = 'static/waveform_with_sampling_rate.png'
+    plot_filename = f"{username}_{filename}_waveform_with_sampling_rate.png"
+    img_path = os.path.join('static', plot_filename)
     plt.savefig(img_path)
     plt.close()
 

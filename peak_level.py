@@ -1,11 +1,12 @@
 import librosa
+import  os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
 
 
-def plot_waveform_with_peak(file_path):
+def plot_waveform_with_peak(file_path,filename,username):
     # Load audio file
     y, sr = librosa.load(file_path)
 
@@ -25,7 +26,8 @@ def plot_waveform_with_peak(file_path):
     plt.title('Audio Waveform with Peak Value')
     plt.legend()
     plt.grid(True)
-    output_path = 'static/waveform_with_peak.png'
+    plot_filename = f"{username}_{filename}_waveform_with_peak.png"
+    output_path = os.path.join('static', plot_filename)
     plt.savefig(output_path)
     plt.close()
     return output_path

@@ -1,4 +1,5 @@
 import librosa
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -16,7 +17,7 @@ def get_silence_speech_ratio(file_path, silence_thresh=-40):
     ratio = silence_duration / speech_duration
     return ratio, speech_duration, silence_duration
 
-def plot_silence_speech_ratio_pie(file_path):
+def plot_silence_speech_ratio_pie(file_path,filename,username):
     ratio, speech_duration, silence_duration = get_silence_speech_ratio(file_path)
 
     # Calculate percentage of speech and silence
@@ -32,7 +33,8 @@ def plot_silence_speech_ratio_pie(file_path):
     plt.figure(figsize=(8, 6))
     plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', startangle=140)
     plt.title('Speech and Silence Duration')
-    output_path = 'static/silence_speech_ratio_pie.png'
+    plot_filename = f"{username}_{filename}_silence_speech_ratio.png"
+    output_path = os.path.join('static', plot_filename)
     plt.savefig(output_path)
     plt.close()
     return output_path

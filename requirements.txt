@@ -3,3 +3,4 @@ librosa==0.8.1
 matplotlib==3.4.2
 numpy==1.20.3
 mutagen==1.45.1
+pip install reportlab pillow

@@ -10,7 +10,8 @@
     <table>
         <thead>
             <tr>
-                <th>Filename</th>
+                <th>File Name</th>
+                <th>Audio File</th>
                 <th>Bitrate</th>
                 <th>Loudness Plot</th>
                 <th>Waveform Plot</th>
@@ -18,19 +19,27 @@
                 <th>Decibels Plot</th>
                 <th>Sampling Rate Plot</th>
                 <th>Harmonicity Plot</th>
+                <th>Download</th>
             </tr>
         </thead>
         <tbody>
-            {% for filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path in uploads %}
+            {% for upload in uploads %}
             <tr>
-                <td>{{ filename }}</td>
-                <td>{{ bitrate }}</td>
-                <td><img src="{{ url_for('static', filename=loudness_plot_path) }}" alt="Loudness Plot"></td>
-                <td><img src="{{ url_for('static', filename=waveform_plot_path) }}" alt="Waveform Plot"></td>
-                <td><img src="{{ url_for('static', filename=silence_speech_ratio_plot_path) }}" alt="Silence/Speech Ratio Plot"></td>
-                <td><img src="{{ url_for('static', filename=plot_path_decibels) }}" alt="Decibels Plot"></td>
-                <td><img src="{{ url_for('static', filename=plot_path_sr) }}" alt="Sampling Rate Plot"></td>
-                <td><img src="{{ url_for('static', filename=harmonicity_plot_path) }}" alt="Harmonicity Plot"></td>
+                <td>{{ upload.original_filename }}</td>
+                <td>
+                    <audio controls>
+                        <source src="{{ url_for('uploaded_file', filename=upload.filename) }}" >
+                        Your browser does not support the audio element.
+                    </audio>
+                </td>
+                <td>{{ upload.bitrate }}</td>
+                <td><img src="{{ url_for('static', filename=upload.loudness_plot_path.split('/')[-1]) }}" alt="Loudness Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.waveform_plot_path.split('/')[-1]) }}" alt="Waveform Plot"class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.silence_speech_ratio_plot_path.split('/')[-1]) }}" alt="Silence/Speech Ratio Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.plot_path_decibels.split('/')[-1]) }}" alt="Decibels Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.plot_path_sr.split('/')[-1]) }}" alt="Sampling Rate Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.harmonicity_plot_path.split('/')[-1]) }}" alt="Harmonicity Plot" class="img-thumbnail"></td>
+                <td><a href="{{ url_for('download_record', record_id=upload.audio_id) }}" class="btn btn-primary">Download</a></td>
             </tr>
             {% endfor %}
         </tbody>

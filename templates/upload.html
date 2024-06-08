@@ -4,26 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload</title>
-    <!-- Dropzone CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.2/dropzone.min.css">
-    
 </head>
 <body>
-    <div id="loader-wrapper">
-        <div id="loader"></div>
-    </div>
-
     <h1>Upload Audio</h1>
-    <!-- Dropzone -->
-    <form id="upload-form" action="/upload" class="dropzone">
-        <div class="fallback">
-            <input name="file" type="file" multiple />
-        </div>
-        <!-- Upload Button -->
-        <button type="submit">Upload</button>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".mp3, .wav">
+        <input type="submit" value="Upload">
     </form>
 
-    <!-- Result Messages -->
     {% if file_size_var %}
     <h2>File Size</h2>
     <p>{{ file_size_var }}</p>
@@ -44,6 +32,7 @@
     <p>{{ tempo }} BPM</p>
     {% endif %}
 
+    
     {% if plot_path_sr_var %}
     <h2>Waveform with Sampling Rate</h2>
     <img src="{{ plot_path_sr_var }}" alt="Waveform with Sampling Rate">
@@ -74,39 +63,5 @@
     <img src="{{ frequency_plot_path }}" alt="Frequency Plot">
     {% endif %}
 
-    <!-- Dropzone JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.2/min/dropzone.min.js"></script>
-    <script>
-        // Customize Dropzone options
-        Dropzone.options.uploadForm = {
-            paramName: "file", // The name that will be used to transfer the file
-            maxFilesize: 10, // MB
-            acceptedFiles: ".mp3,.wav",
-            dictDefaultMessage: "Drag and drop your audio file here or click to browse.",
-            dictFallbackMessage: "Your browser does not support drag and drop file uploads.",
-            dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
-            dictInvalidFileType: "Unsupported file type.",
-            dictResponseError: "Server responded with {{statusCode}} code.",
-            init: function() {
-                this.on("sending", function(file, xhr, formData) {
-                    // Show loader when file is being uploaded
-                    document.getElementById('loader-wrapper').style.display = 'block';
-                    document.getElementById('loader').style.display = 'block';
-                });
-                this.on("success", function(file, response) {
-                    // Hide loader when file upload is complete
-                    document.getElementById('loader-wrapper').style.display = 'none';
-                    document.getElementById('loader').style.display = 'none';
-                    // Handle response data if needed
-                });
-                this.on("error", function(file, errorMessage) {
-                    // Hide loader if there's an error
-                    document.getElementById('loader-wrapper').style.display = 'none';
-                    document.getElementById('loader').style.display = 'none';
-                    // Handle error message display if needed
-                });
-            }
-        };
-    </script>
 </body>
 </html>

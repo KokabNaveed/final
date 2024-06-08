@@ -12,10 +12,15 @@ from file_utils import calculate_file_size
 from harmonicity import get_harmonicity, plot_harmonicity
 from frequency import plot_frequency_spectrum
 from tempo import estimate_tempo
+from datetime import datetime
+
 
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'mp3', 'wav'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure the database and uploads directories exist
 if not os.path.exists('database'):
@@ -103,11 +108,10 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Get the username and password from the form
         username = request.form['username']
         password = request.form['password']
         
-          # Connect to the database
+        # Connect to the MySQL database
         conn = pymysql.connect(
             host='localhost',
             user='root',
@@ -118,34 +122,34 @@ def login():
         )
         cursor = conn.cursor()
         
-        # Fetch user details from the database
-        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
-        user = cursor.fetchone()
-        
-                # Check if user exists and passwords match
-        if user and user['password'] == password:  # Check password without hashing
-            session['username'] = username
-            conn.close()
-            return redirect(url_for('index'))
-        else:
-            flash("Invalid username or password")
+        try:
+            # Fetch user details from the database
+            cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+            user = cursor.fetchone()
+            
+            # Check if user exists and passwords match
+            if user and user['password'] == password:  # Check password without hashing
+                session['username'] = username
+                session['user_id'] = user['id']  # Assuming 'id' is the column name for user ID
+                return redirect(url_for('index'))
+            else:
+                flash("Invalid username or password")
+        except pymysql.MySQLError as e:
+            flash("Database error")
+            print(e)
+        finally:
             conn.close()
     
     return render_template('login.html')
 
-
+#logout
 @app.route('/logout')
 def logout():
     # Remove the username from the session if it's there
     session.pop('username', None)
     return redirect(url_for('index'))
 
-@app.route('/dashboard')
-def dashboard():
-    # Remove the username from the session if it's there
-    session.pop('username', None)
-    return redirect(url_for('index'))
-
+#upload audio
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
@@ -163,7 +167,9 @@ def upload():
             flash("Unsupported file format. Only .mp3 and .wav are allowed.")
             return redirect(request.url)
         
-        filename = secure_filename(file.filename)
+          # Add timestamp to the filename
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = secure_filename(f"{timestamp}_{file.filename}")
         file_path = os.path.join('uploads', filename)
         file.save(file_path)
         
@@ -179,28 +185,29 @@ def upload():
         if bitrate is None:
             flash("Error calculating bitrate")
             return redirect(request.url)
-        
+        username = session.get('username')  # Get username from session
+
         # Plot the waveform with sampling rate and save the plot
-        plot_path_sr = plot_waveform_with_sampling_rate(file_path)
+        plot_path_sr = plot_waveform_with_sampling_rate(file_path, filename, username)
 
         # Calculate decibels with sampling rate
         decibels_value = calculate_decibels_with_sampling_rate(file_path, bitrate)
         decibels_with_units = f"{decibels_value:.2f} dB"
 
         # Plot the loudness and save the plot
-        loudness_plot_path = plot_loudness(file_path)
+        loudness_plot_path = plot_loudness(file_path, filename, username)
         
         # Plot the waveform with peak and save the plot
-        waveform_plot_path = plot_waveform_with_peak(file_path)
+        waveform_plot_path = plot_waveform_with_peak(file_path, filename, username)
 
         # Plot the silence speech ratio pie chart and save the plot
-        silence_speech_ratio_plot_path = plot_silence_speech_ratio_pie(file_path)
+        silence_speech_ratio_plot_path = plot_silence_speech_ratio_pie(file_path, filename, username)
 
         # Plot harmonicity and save the plot
-        harmonicity_plot_path = plot_harmonicity(file_path)
+        harmonicity_plot_path = plot_harmonicity(file_path, filename, username)
 
         # Plot the frequency spectrum and save the plot
-        frequency_plot_path = plot_frequency_spectrum(file_path)
+        frequency_plot_path = plot_frequency_spectrum(file_path, filename, username)
 
         # Estimate tempo and save the tempo value
         tempo = estimate_tempo(file_path)
@@ -208,6 +215,8 @@ def upload():
         # Calculate the file size
         file_size_mb = calculate_file_size(file_path)
         
+        user_id = session.get('user_id')  # Get user_id from session
+
         # Connect to MySQL database
         conn = pymysql.connect(
             host='localhost',
@@ -221,8 +230,8 @@ def upload():
         
         try:
             # Insert upload details into MySQL database
-            cursor.execute('INSERT INTO uploads (filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', 
-                           (filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, decibels_with_units, plot_path_sr, harmonicity_plot_path))
+            cursor.execute('INSERT INTO uploads (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)', 
+                           (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, decibels_with_units, plot_path_sr, harmonicity_plot_path))
             conn.commit()
             flash(f"File uploaded successfully with bitrate: {bitrate} kbps")
         except pymysql.MySQLError as e:

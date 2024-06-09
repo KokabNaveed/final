@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload</title>
+    <title>Upload Audio</title>
 </head>
 <body>
     <h1>Upload Audio</h1>
@@ -22,9 +22,9 @@
     <p>{{ bitrate_var }}</p>
     {% endif %}
 
-    {% if plot_path_decibels_var %}
+    {% if decibels_var %}
     <h2>Decibels</h2>
-    <p>{{ plot_path_decibels_var }}</p>
+    <p>{{ decibels_var }}</p>
     {% endif %}
 
     {% if tempo %}
@@ -32,7 +32,6 @@
     <p>{{ tempo }} BPM</p>
     {% endif %}
 
-    
     {% if plot_path_sr_var %}
     <h2>Waveform with Sampling Rate</h2>
     <img src="{{ plot_path_sr_var }}" alt="Waveform with Sampling Rate">
@@ -56,11 +55,6 @@
     {% if harmonicity_plot_path %}
     <h2>Harmonicity Plot</h2>
     <img src="{{ harmonicity_plot_path }}" alt="Harmonicity Plot">
-    {% endif %}
-
-    {% if frequency_plot_path %}
-    <h2>Frequency Plot</h2>
-    <img src="{{ frequency_plot_path }}" alt="Frequency Plot">
     {% endif %}
 
 </body>

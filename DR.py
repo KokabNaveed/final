@@ -38,7 +38,7 @@ def plot_waveform_with_sampling_rate(file_path,filename,username):
 
     return img_path
 
-def calculate_decibels_with_sampling_rate(file_path, sampling_rate, reference_pressure=20e-6):
+def calculate_decibels_with_sampling_rate(file_path,reference_pressure=20e-6):
     # Load audio file
     audio_data, _ = load_audio(file_path)
     

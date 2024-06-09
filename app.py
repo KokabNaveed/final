@@ -6,10 +6,9 @@ from Bitrate import get_bitrate
 from DR import calculate_decibels_with_sampling_rate, plot_waveform_with_sampling_rate
 from loudness import get_loudness, plot_loudness
 from peak_level import plot_waveform_with_peak
-from silence_speech import get_silence_speech_ratio, plot_silence_speech_ratio_pie
+from silence_speech import plot_silence_speech_ratio_pie
 from file_utils import calculate_file_size
-from harmonicity import get_harmonicity, plot_harmonicity
-from frequency import plot_frequency_spectrum
+from harmonicity import plot_harmonicity
 from tempo import estimate_tempo
 from datetime import datetime
 from io import BytesIO
@@ -33,8 +32,8 @@ if not os.path.exists('uploads'):
 def init_db():
     conn = pymysql.connect(
         host='localhost',
-        user='root',       
-        password='',  
+        user='root',
+        password='',
         db='audio',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
@@ -54,16 +53,17 @@ def init_db():
                         loudness_plot_path VARCHAR(255) NOT NULL,
                         waveform_plot_path VARCHAR(255) NOT NULL,
                         silence_speech_ratio_plot_path VARCHAR(255) NOT NULL,
-                        plot_path_decibels VARCHAR(255) NOT NULL,
                         plot_path_sr VARCHAR(255) NOT NULL,
                         harmonicity_plot_path VARCHAR(255) NOT NULL,
+                        decibels FLOAT,  -- Add decibels column
+                        tempo FLOAT,     -- Add tempo column
+                        file_size FLOAT, -- Add file_size column
                         FOREIGN KEY (user_id) REFERENCES users(id))''')
     conn.commit()
     conn.close()
 
 # Call init_db() only once when the application starts
 init_db()
-
 
 #Home
 @app.route('/')
@@ -193,8 +193,9 @@ def upload():
         plot_path_sr = plot_waveform_with_sampling_rate(file_path, filename, username)
 
         # Calculate decibels with sampling rate
-        decibels_value = calculate_decibels_with_sampling_rate(file_path, bitrate)
+        decibels_value = calculate_decibels_with_sampling_rate(file_path)
         decibels_with_units = f"{decibels_value:.2f} dB"
+        print(f"Decibels Value: {decibels_value}")
 
         # Plot the loudness and save the plot
         loudness_plot_path = plot_loudness(file_path, filename, username)
@@ -208,11 +209,9 @@ def upload():
         # Plot harmonicity and save the plot
         harmonicity_plot_path = plot_harmonicity(file_path, filename, username)
 
-        # Plot the frequency spectrum and save the plot
-        frequency_plot_path = plot_frequency_spectrum(file_path, filename, username)
-
         # Estimate tempo and save the tempo value
         tempo = estimate_tempo(file_path)
+        print(f"Tempo: {tempo}")
 
         # Calculate the file size
         file_size_mb = calculate_file_size(file_path)
@@ -232,8 +231,8 @@ def upload():
         
         try:
             # Insert upload details into MySQL database
-            cursor.execute('INSERT INTO uploads (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)', 
-                           (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, frequency_plot_path, plot_path_sr, harmonicity_plot_path))
+            cursor.execute('INSERT INTO uploads (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_sr, harmonicity_plot_path, decibels, tempo, file_size) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', 
+                        (user_id,filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path,  plot_path_sr, harmonicity_plot_path, decibels_with_units, tempo,file_size_mb))
             conn.commit()
             flash(f"File uploaded successfully with bitrate: {bitrate} kbps")
         except pymysql.MySQLError as e:
@@ -243,7 +242,8 @@ def upload():
             conn.close()
         
         # Pass the paths of the generated graph images and tempo value to the template
-        return render_template('upload.html', plot_path_sr_var=plot_path_sr, plot_path_decibels_var=decibels_with_units, loudness_plot_path=loudness_plot_path, waveform_plot_path=waveform_plot_path, silence_speech_ratio_plot_path=silence_speech_ratio_plot_path, file_size_var=f"{file_size_mb:.2f} MB", bitrate_var=f"{bitrate} kbps", harmonicity_plot_path=harmonicity_plot_path, frequency_plot_path=frequency_plot_path, tempo=tempo)
+        return render_template('upload.html', plot_path_sr_var=plot_path_sr, loudness_plot_path=loudness_plot_path, waveform_plot_path=waveform_plot_path, silence_speech_ratio_plot_path=silence_speech_ratio_plot_path, file_size_var=f"{file_size_mb:.2f} MB", bitrate_var=f"{bitrate} kbps", harmonicity_plot_path=harmonicity_plot_path, tempo=tempo, decibels_var=decibels_with_units)
+
 
     return render_template('upload.html')
 
@@ -268,7 +268,6 @@ def history():
     )
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM uploads WHERE user_id = %s', (user_id,))
-    # cursor.execute('SELECT filename, bitrate, loudness_plot_path, waveform_plot_path, silence_speech_ratio_plot_path, plot_path_decibels, plot_path_sr, harmonicity_plot_path FROM uploads WHERE user_id = %s', (user_id,))
     uploads = cursor.fetchall()
     conn.close()
 
@@ -280,10 +279,14 @@ def history():
         upload['plot_path_decibels'] = upload['plot_path_decibels'].replace('\\', '/')
         upload['plot_path_sr'] = upload['plot_path_sr'].replace('\\', '/')
         upload['harmonicity_plot_path'] = upload['harmonicity_plot_path'].replace('\\', '/')
-    #removing time stamp from filename
-    filename_parts = upload['filename'].split('_', 1)
-    original_filename = filename_parts[1] if len(filename_parts) > 1 else upload['filename']
-    upload['original_filename'] = original_filename
+        
+        # Debugging print statements
+        print(f"Filename: {upload['filename']}, Decibels: {upload['decibels']}, Tempo: {upload['tempo']}")
+
+        # Removing time stamp from filename
+        filename_parts = upload['filename'].split('_', 1)
+        original_filename = filename_parts[1] if len(filename_parts) > 1 else upload['filename']
+        upload['original_filename'] = original_filename
 
     return render_template('history.html', uploads=uploads)
 
@@ -323,25 +326,24 @@ def download_record(record_id):
     # Add metadata
     c.drawString(100, 730, f"Name: {username}")
     c.drawString(100, 710, f"File Name: {original_filename}")
-    c.drawString(100, 690, f"Bitrate: {upload['bitrate']}")
+    c.drawString(100, 690, f"Bitrate: {upload['bitrate']} kbps")
 
     # Draw images
     y_position = 650  # Adjust the starting position for drawing images
 
     def draw_image(image_path, description, c, y_position):
-        if y_position < 80:
+        if y_position < 100:
             c.showPage()  # Start a new page if the current one is full
             c.setFont("Helvetica-Bold", 16)
             c.drawString(100, 750, "Audio Record Analysis (continued)")
             c.setFont("Helvetica", 12)
-            y_position = 750
+            y_position = 700
         c.drawString(100, y_position, description)
         y_position -= 20
         image = Image.open(image_path)
-        image_width, image_height = image.size
-        aspect = image_height / float(image_width)
-        c.drawInlineImage(image, 100, y_position - image_height, width=400, height=400 * aspect)
-        return y_position - 400 * aspect - 20
+        aspect = image.height / float(image.width)
+        c.drawInlineImage(image, 100, y_position - 200 * aspect, width=400, height=200 * aspect)
+        return y_position - 200 * aspect - 30
 
     y_position = draw_image(upload['loudness_plot_path'].replace('\\', '/'), "Loudness Plot", c, y_position)
     y_position = draw_image(upload['waveform_plot_path'].replace('\\', '/'), "Waveform Plot", c, y_position)
@@ -356,7 +358,7 @@ def download_record(record_id):
     pdf_filename = f"{original_filename}_history.pdf"
     pdf_path = os.path.join("tmp", pdf_filename.replace(':', '_'))  # Replace illegal characters in filename
     try:
-       with open(pdf_path, "wb") as f:
+        with open(pdf_path, "wb") as f:
             f.write(pdf_buffer.getvalue())
     finally:
         # Close the pdf_buffer
@@ -372,6 +374,59 @@ def download_record(record_id):
         print(f"Error while removing file: {e}")
 
     return response
+
+# In your Flask app (app.py)
+
+@app.route('/delete_record/<int:record_id>', methods=['POST'])
+def delete_record(record_id):
+    user_id = session.get('user_id')
+    if user_id is None:
+        flash("You need to log in first")
+        return redirect(url_for('login'))
+
+    conn = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        db='audio',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
+    cursor = conn.cursor()
+
+    # Fetch the record details to get the file paths
+    cursor.execute('SELECT * FROM uploads WHERE audio_id = %s AND user_id = %s', (record_id, user_id))
+    upload = cursor.fetchone()
+
+    if not upload:
+        flash("Record not found")
+        conn.close()
+        return redirect(url_for('history'))
+
+    # Delete the files from the filesystem
+    files_to_delete = [
+        upload['loudness_plot_path'],
+        upload['waveform_plot_path'],
+        upload['silence_speech_ratio_plot_path'],
+        upload['plot_path_decibels'],
+        upload['plot_path_sr'],
+        upload['harmonicity_plot_path'],
+        os.path.join(app.config['UPLOAD_FOLDER'], upload['filename'])
+    ]
+
+    for file_path in files_to_delete:
+        try:
+            os.remove(file_path.replace('\\', '/'))
+        except Exception as e:
+            print(f"Error while removing file: {e}")
+
+    # Delete the record from the database
+    cursor.execute('DELETE FROM uploads WHERE audio_id = %s AND user_id = %s', (record_id, user_id))
+    conn.commit()
+    conn.close()
+
+    flash("Record deleted successfully")
+    return redirect(url_for('history'))
 
 if __name__ == '__main__':
     app.run(debug=True)

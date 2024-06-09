@@ -13,6 +13,9 @@
                 <th>File Name</th>
                 <th>Audio File</th>
                 <th>Bitrate</th>
+                <th>File Size</th>
+                <th>Decibels</th>
+                <th>Tempo</th>
                 <th>Loudness Plot</th>
                 <th>Waveform Plot</th>
                 <th>Silence/Speech Ratio Plot</th>
@@ -20,6 +23,7 @@
                 <th>Sampling Rate Plot</th>
                 <th>Harmonicity Plot</th>
                 <th>Download</th>
+                <th>Delete</th>
             </tr>
         </thead>
         <tbody>
@@ -28,18 +32,25 @@
                 <td>{{ upload.original_filename }}</td>
                 <td>
                     <audio controls>
-                        <source src="{{ url_for('uploaded_file', filename=upload.filename) }}" >
+                        <source src="{{ url_for('uploaded_file', filename=upload.filename) }}" type="audio/mpeg">
                         Your browser does not support the audio element.
                     </audio>
                 </td>
-                <td>{{ upload.bitrate }}</td>
-                <td><img src="{{ url_for('static', filename=upload.loudness_plot_path.split('/')[-1]) }}" alt="Loudness Plot" class="img-thumbnail"></td>
-                <td><img src="{{ url_for('static', filename=upload.waveform_plot_path.split('/')[-1]) }}" alt="Waveform Plot"class="img-thumbnail"></td>
-                <td><img src="{{ url_for('static', filename=upload.silence_speech_ratio_plot_path.split('/')[-1]) }}" alt="Silence/Speech Ratio Plot" class="img-thumbnail"></td>
-                <td><img src="{{ url_for('static', filename=upload.plot_path_decibels.split('/')[-1]) }}" alt="Decibels Plot" class="img-thumbnail"></td>
-                <td><img src="{{ url_for('static', filename=upload.plot_path_sr.split('/')[-1]) }}" alt="Sampling Rate Plot" class="img-thumbnail"></td>
-                <td><img src="{{ url_for('static', filename=upload.harmonicity_plot_path.split('/')[-1]) }}" alt="Harmonicity Plot" class="img-thumbnail"></td>
+                <td>{{ upload.bitrate }} kbps</td>
+                <td>{{ upload.file_size }} MB</td>
+                <td>{{ upload.decibels }} dB</td>
+                <td>{{ upload.tempo }} BPM</td>
+                <td><img src="{{ url_for('static', filename=upload.loudness_plot_path) }}" alt="Loudness Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.waveform_plot_path) }}" alt="Waveform Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.silence_speech_ratio_plot_path) }}" alt="Silence/Speech Ratio Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.plot_path_sr) }}" alt="Sampling Rate Plot" class="img-thumbnail"></td>
+                <td><img src="{{ url_for('static', filename=upload.harmonicity_plot_path) }}" alt="Harmonicity Plot" class="img-thumbnail"></td>
                 <td><a href="{{ url_for('download_record', record_id=upload.audio_id) }}" class="btn btn-primary">Download</a></td>
+                <td>
+                    <form action="{{ url_for('delete_record', record_id=upload.audio_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this record?');">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
